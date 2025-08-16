@@ -12,10 +12,6 @@
   .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
   h1{margin:0 0 6px;font-size:1.35rem}
   .muted{color:var(--muted)}
-  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  @media(max-width:720px){.row{grid-template-columns:1fr}}
-  input,button,select{font:inherit}
-  input[type="text"], input[type="date"]{width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);background:#0b1220;color:#e5e7eb}
   .q{border:1px solid var(--line);border-radius:12px;padding:12px;background:#0b1220}
   .q h3{margin:0 0 8px;font-size:1rem}
   .opts{display:flex;flex-wrap:wrap;gap:10px}
@@ -34,18 +30,6 @@
     <h1>BAI – Inventário de Ansiedade de Beck</h1>
     <p class="muted">Marque o quanto cada sintoma lhe incomodou na <strong>última semana</strong>, incluindo hoje.</p>
 
-    <!-- Identificação (auto via URL, mas aparece se faltar) -->
-    <div id="idBlock" class="row" style="margin-top:10px;">
-      <div>
-        <label>CPF (somente números)</label>
-        <input id="cpf" type="text" inputmode="numeric" placeholder="00000000000"/>
-      </div>
-      <div>
-        <label>Data de nascimento</label>
-        <input id="nasc" type="date"/>
-      </div>
-    </div>
-
     <form id="form" style="margin-top:14px;">
       <div id="qs"></div>
       <div style="margin-top:14px">
@@ -58,14 +42,13 @@
 
 <script>
 // ======== CONFIG ========
-const SHEETDB_BASE = "https://sheetdb.io/api/v1/8pmdh33s9fvy8"; // seu endpoint
-const SHEETS = { PATIENTS:"Patients", SCORES:"Scores_BAI" };     // aba exclusiva do BAI
+const SHEETDB_BASE = "https://sheetdb.io/api/v1/8pmdh33s9fvy8";
+const SHEETS = { PATIENTS:"Patients", TOKENS:"LinkTokens", SCORES:"Scores_BAI" };
 const CODE = "BAI";
 const REDIRECT_URL = "https://integradaneuropsicologia.github.io/formularios/";
 
 // ======== HELPERS ========
 const $ = s => document.querySelector(s);
-const onlyDigits = s => (s||"").replace(/\D+/g,"");
 const qs = k => new URLSearchParams(location.search).get(k) || "";
 function setMsg(text, ok=true){ const b=$("#msg"); b.style.display="block"; b.className="msg "+(ok?"okbox":"errbox"); b.textContent=text; }
 async function GET(url){ const r=await fetch(url); if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); }
@@ -127,35 +110,68 @@ function renderQuestions(){
 }
 renderQuestions();
 
-// hidrata CPF/nasc da URL + pré-checagem se já foi preenchido
-(async function hydrateAndPrecheck(){
-  const cpfURL=onlyDigits(qs("cpf")), nascURL=qs("nasc");
-  if(cpfURL) $("#cpf").value=cpfURL;
-  if(nascURL) $("#nasc").value=nascURL;
-  if(cpfURL && nascURL){
-    $("#idBlock").style.display="none";
-    try{
-      // 1) valida existência em Patients (cpf + data)
-      const okPat = await sheetSearch(SHEETS.PATIENTS, { cpf: cpfURL, data_nascimento: nascURL });
-      if(!okPat.length){ setMsg("Dados inválidos (CPF/data).", false); return; }
-      const rowPat = okPat[0];
-      // 2) bloqueia se já fez (via FEITO OU via Scores)
-      const doneFlag = String(rowPat[`${CODE}_FEITO`]||"").toLowerCase()==="sim";
-      const already = await sheetSearch(SHEETS.SCORES, { cpf: cpfURL, code: CODE });
-      if(doneFlag || (already && already.length)){
-        setMsg("Formulário já preenchido para este CPF. Redirecionando…", true);
-        setTimeout(()=>{ window.location.href = REDIRECT_URL; }, 1200);
-      }
-    }catch(_){}
+// ======== LOGIN VIA TOKEN ========
+let TOKEN = "";
+let CPF   = "";
+let PATIENT = null;
+
+(async function boot(){
+  try{
+    TOKEN = qs("token");
+    if(!TOKEN){ setMsg("Link inválido: token ausente. Solicite um novo link ao consultório.", false); disableForm(); return; }
+
+    // 1) token → cpf (e valida expiração/disabled)
+    const trows = await sheetSearch(SHEETS.TOKENS, { token: TOKEN });
+    if(!trows || !trows.length) throw new Error("Token inválido ou não encontrado.");
+    const t = trows[0];
+    const disabled = String(t.disabled||"não").toLowerCase()==="sim";
+    const expired  = t.expires_at && (new Date(t.expires_at) < new Date());
+    if(disabled || expired) throw new Error("Token expirado ou desativado.");
+
+    CPF = (t.cpf||"").replace(/\D+/g,"");
+    if(!CPF) throw new Error("Token sem CPF vinculado.");
+
+    // 2) carrega paciente
+    const prows = await sheetSearch(SHEETS.PATIENTS, { cpf: CPF });
+    if(!prows || !prows.length) throw new Error("Paciente não encontrado. Contate o consultório.");
+    PATIENT = prows[0];
+
+    // 3) checa se BAI está liberado p/ este CPF
+    const allowed = String(PATIENT[CODE]||"").toLowerCase()==="sim";
+    if(!allowed){ setMsg("Este teste não foi liberado para você. Fale com o consultório.", false); disableForm(); return; }
+
+    // 4) bloqueio se já fez
+    const doneFlag = String(PATIENT[`${CODE}_FEITO`]||"").toLowerCase()==="sim";
+    const already = await sheetSearch(SHEETS.SCORES, { cpf: CPF, code: CODE });
+    if(doneFlag || (already && already.length)){
+      setMsg("Você já enviou este formulário. Redirecionando…", true);
+      setTimeout(()=>{ window.location.href = REDIRECT_URL; }, 1200);
+      return;
+    }
+
+    // ok, liberado
+    setMsg("Tudo certo, pode preencher!", true);
+    setTimeout(()=>{ $("#msg").style.display="none"; }, 800);
+  }catch(e){
+    console.error(e);
+    setMsg(e.message || "Falha ao validar o link. Tente novamente.", false);
+    disableForm();
   }
 })();
 
-// ======== SUBMIT (com trava contra clique duplo) ========
+function disableForm(){
+  document.querySelectorAll("input,button,select").forEach(el=>{
+    if(el.id!=="btnSubmit") el.disabled = true;
+  });
+  $("#btnSubmit").disabled = true;
+}
+
+// ======== SUBMIT (anti duplo clique) ========
 let sending = false;
 
 $("#form").addEventListener("submit", async (e)=>{
   e.preventDefault();
-  if(sending) return;           // evita clique duplo
+  if(sending) return;
   sending = true;
   const btn = $("#btnSubmit");
   btn.disabled = true;
@@ -163,26 +179,8 @@ $("#form").addEventListener("submit", async (e)=>{
   btn.textContent = "Enviando…";
 
   try{
-    // identificação
-    const cpf = onlyDigits($("#cpf").value || qs("cpf"));
-    const nasc = $("#nasc").value || qs("nasc");
-    if(!cpf || cpf.length!==11){ throw new Error("CPF inválido ou ausente."); }
-    if(!nasc){ throw new Error("Informe a data de nascimento."); }
-
-    // 1) valida Patients (cpf + data) ANTES de aceitar
-    const pat = await sheetSearch(SHEETS.PATIENTS, { cpf, data_nascimento: nasc });
-    if(!pat.length) throw new Error("CPF e data de nascimento não conferem.");
-    const patRow = pat[0];
-
-    // 2) bloqueia reenvio: checa FEITO e se já existe em Scores
-    const feito = String(patRow[`${CODE}_FEITO`]||"").toLowerCase()==="sim";
-    if(feito) { setMsg("Você já enviou este formulário. Redirecionando…", true); setTimeout(()=>location.href=REDIRECT_URL, 1200); return; }
-    const exists = await sheetSearch(SHEETS.SCORES, { cpf, code: CODE });
-    if(exists && exists.length){
-      setMsg("Você já enviou este formulário. Redirecionando…", true);
-      setTimeout(()=>{ window.location.href = REDIRECT_URL; }, 1200);
-      return;
-    }
+    // sanity: precisa ter token + cpf + patient carregado
+    if(!TOKEN || !CPF || !PATIENT) throw new Error("Sessão inválida. Reabra o link do formulário.");
 
     // coleta pontuação total
     let total = 0;
@@ -194,25 +192,28 @@ $("#form").addEventListener("submit", async (e)=>{
     }
     const cat = categoria(total);
 
-    // 3) salva APENAS total + categoria
+    // salva APENAS total + categoria (com token)
     await sheetCreate(SHEETS.SCORES, {
-      result_id: `${cpf}_${CODE}_${Date.now()}`,
-      cpf, code: CODE, source: "paciente",
+      result_id: `${CPF}_${CODE}_${Date.now()}`,
+      token: TOKEN,
+      cpf: CPF,
+      code: CODE,
+      source: "paciente",
       submitted_at: new Date().toISOString(),
-      total, categoria: cat
+      total,
+      categoria: cat
     });
 
-    // 4) marca FEITO
-    await sheetPatchBy(SHEETS.PATIENTS, "cpf", cpf, { [`${CODE}_FEITO`]: "sim" });
+    // marca FEITO
+    await sheetPatchBy(SHEETS.PATIENTS, "cpf", CPF, { [`${CODE}_FEITO`]: "sim" });
 
-    // 5) ok + redireciona
-    setMsg("Formulário preenchido. respostas enviadas.", true);
+    // ok + redireciona
+    setMsg("formulário preenchido. respostas enviadas", true);
     setTimeout(()=>{ window.location.href = REDIRECT_URL; }, 1200);
 
   }catch(err){
     console.error(err);
     setMsg(err.message || "Falha ao enviar. Tente novamente.", false);
-    // libera para o usuário tentar de novo
     sending = false;
     btn.disabled = false;
     btn.textContent = originalText;
