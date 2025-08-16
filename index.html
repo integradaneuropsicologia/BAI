@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>BAI – Inventário de Ansiedade de Beck</title>
+<style>
+  :root{--bg:#0f172a;--card:#111827;--line:#1f2937;--text:#e5e7eb;--muted:#94a3b8;--pri:#4f46e5;--ok:#22c55e;--err:#ef4444}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto}
+  .wrap{max-width:960px;margin:24px auto;padding:0 16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+  h1{margin:0 0 6px;font-size:1.35rem}
+  .muted{color:var(--muted)}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:720px){.row{grid-template-columns:1fr}}
+  input,button,select{font:inherit}
+  input[type="text"], input[type="date"]{width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);background:#0b1220;color:#e5e7eb}
+  .q{border:1px solid var(--line);border-radius:12px;padding:12px;background:#0b1220}
+  .q h3{margin:0 0 8px;font-size:1rem}
+  .opts{display:flex;flex-wrap:wrap;gap:10px}
+  .opt{display:flex;align-items:center;gap:6px;padding:8px 10px;border:1px solid var(--line);border-radius:10px}
+  .btn{display:inline-flex;align-items:center;gap:8px;background:var(--pri);border:none;color:#fff;padding:10px 14px;border-radius:10px;cursor:pointer}
+  .btn.ok{background:var(--ok)}
+  .btn:disabled{opacity:.6;cursor:not-allowed}
+  .msg{margin:10px 0;padding:10px;border-radius:8px}
+  .okbox{background:#052e1a;border:1px solid #114d2a;color:#b3f7c1}
+  .errbox{background:#3b0d0d;border:1px solid #5b1919;color:#ffd0d0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>BAI – Inventário de Ansiedade de Beck</h1>
+    <p class="muted">Marque o quanto cada sintoma lhe incomodou na <strong>última semana</strong>, incluindo hoje.</p>
+
+    <!-- Identificação (auto via URL, mas aparece se faltar) -->
+    <div id="idBlock" class="row" style="margin-top:10px;">
+      <div>
+        <label>CPF (somente números)</label>
+        <input id="cpf" type="text" inputmode="numeric" placeholder="00000000000"/>
+      </div>
+      <div>
+        <label>Data de nascimento</label>
+        <input id="nasc" type="date"/>
+      </div>
+    </div>
+
+    <form id="form" style="margin-top:14px;">
+      <div id="qs"></div>
+      <div style="margin-top:14px">
+        <button id="btnSubmit" class="btn ok" type="submit">Enviar respostas</button>
+      </div>
+      <div id="msg" class="msg" style="display:none"></div>
+    </form>
+  </div>
+</div>
+
+<script>
+// ======== CONFIG ========
+const SHEETDB_BASE = "https://sheetdb.io/api/v1/8pmdh33s9fvy8"; // seu endpoint
+const SHEETS = { PATIENTS:"Patients", SCORES:"Scores_BAI" };     // aba exclusiva do BAI
+const CODE = "BAI";
+const REDIRECT_URL = "https://integradaneuropsicologia.github.io/formularios/";
+
+// ======== HELPERS ========
+const $ = s => document.querySelector(s);
+const onlyDigits = s => (s||"").replace(/\D+/g,"");
+const qs = k => new URLSearchParams(location.search).get(k) || "";
+function setMsg(text, ok=true){ const b=$("#msg"); b.style.display="block"; b.className="msg "+(ok?"okbox":"errbox"); b.textContent=text; }
+async function GET(url){ const r=await fetch(url); if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); }
+async function sheetSearch(sheet, params){
+  const usp = new URLSearchParams(params);
+  return GET(`${SHEETDB_BASE}/search?sheet=${encodeURIComponent(sheet)}&${usp.toString()}`);
+}
+async function sheetCreate(sheet, row){
+  const r = await fetch(`${SHEETDB_BASE}?sheet=${encodeURIComponent(sheet)}`, {
+    method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ data:[row] })
+  });
+  if(!r.ok) throw new Error(await r.text()); return r.json();
+}
+async function sheetPatchBy(sheet, column, value, data){
+  const r = await fetch(`${SHEETDB_BASE}/${encodeURIComponent(column)}/${encodeURIComponent(value)}?sheet=${encodeURIComponent(sheet)}`, {
+    method:"PATCH", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ data })
+  });
+  if(!r.ok) throw new Error(await r.text()); return r.json();
+}
+
+// ======== ITENS/OPÇÕES ========
+const ITEMS = [
+  "Dormência ou formigamento.","Sensação de calor.","Tremores nas pernas.","Incapaz de relaxar.",
+  "Medo que aconteça o pior.","Atordoado ou tonto.","Palpitação ou aceleração do coração.","Sem equilíbrio.",
+  "Aterrorizado.","Nervoso.","Sensação de sufocação.","Tremores nas mãos.","Trêmulo.",
+  "Medo de perder o controle.","Dificuldade de respirar.","Medo de morrer.","Assustado.",
+  "Indigestão ou desconforto no abdômen.","Sensação de desmaio.","Rosto afogueado.","Suor (não devido ao calor)."
+];
+const CHOICES = [
+  {label:"Absolutamente não", value:0},
+  {label:"Levemente",         value:1},
+  {label:"Moderadamente",     value:2},
+  {label:"Gravemente",        value:3},
+];
+function categoria(total){
+  if(total <= 10) return "mínimo";
+  if(total <= 19) return "leve";
+  if(total <= 30) return "moderada";
+  return "severa";
+}
+
+// ======== RENDER ========
+function renderQuestions(){
+  const host = $("#qs"); host.innerHTML="";
+  ITEMS.forEach((text, idx)=>{
+    const qn = String(idx+1).padStart(2,"0");
+    const wrap = document.createElement("div");
+    wrap.className="q";
+    wrap.innerHTML = `<h3>${idx+1}. ${text}</h3>`;
+    const opts = document.createElement("div"); opts.className="opts";
+    CHOICES.forEach(c=>{
+      const id=`q${qn}_${c.value}`;
+      const lab=document.createElement("label"); lab.className="opt";
+      lab.innerHTML = `<input type="radio" name="q${qn}" id="${id}" value="${c.value}" required><span>${c.label}</span>`;
+      opts.appendChild(lab);
+    });
+    wrap.appendChild(opts); host.appendChild(wrap);
+  });
+}
+renderQuestions();
+
+// hidrata CPF/nasc da URL + pré-checagem se já foi preenchido
+(async function hydrateAndPrecheck(){
+  const cpfURL=onlyDigits(qs("cpf")), nascURL=qs("nasc");
+  if(cpfURL) $("#cpf").value=cpfURL;
+  if(nascURL) $("#nasc").value=nascURL;
+  if(cpfURL && nascURL){
+    $("#idBlock").style.display="none";
+    try{
+      // 1) valida existência em Patients (cpf + data)
+      const okPat = await sheetSearch(SHEETS.PATIENTS, { cpf: cpfURL, data_nascimento: nascURL });
+      if(!okPat.length){ setMsg("Dados inválidos (CPF/data).", false); return; }
+      const rowPat = okPat[0];
+      // 2) bloqueia se já fez (via FEITO OU via Scores)
+      const doneFlag = String(rowPat[`${CODE}_FEITO`]||"").toLowerCase()==="sim";
+      const already = await sheetSearch(SHEETS.SCORES, { cpf: cpfURL, code: CODE });
+      if(doneFlag || (already && already.length)){
+        setMsg("Formulário já preenchido para este CPF. Redirecionando…", true);
+        setTimeout(()=>{ window.location.href = REDIRECT_URL; }, 1200);
+      }
+    }catch(_){}
+  }
+})();
+
+// ======== SUBMIT (com trava contra clique duplo) ========
+let sending = false;
+
+$("#form").addEventListener("submit", async (e)=>{
+  e.preventDefault();
+  if(sending) return;           // evita clique duplo
+  sending = true;
+  const btn = $("#btnSubmit");
+  btn.disabled = true;
+  const originalText = btn.textContent;
+  btn.textContent = "Enviando…";
+
+  try{
+    // identificação
+    const cpf = onlyDigits($("#cpf").value || qs("cpf"));
+    const nasc = $("#nasc").value || qs("nasc");
+    if(!cpf || cpf.length!==11){ throw new Error("CPF inválido ou ausente."); }
+    if(!nasc){ throw new Error("Informe a data de nascimento."); }
+
+    // 1) valida Patients (cpf + data) ANTES de aceitar
+    const pat = await sheetSearch(SHEETS.PATIENTS, { cpf, data_nascimento: nasc });
+    if(!pat.length) throw new Error("CPF e data de nascimento não conferem.");
+    const patRow = pat[0];
+
+    // 2) bloqueia reenvio: checa FEITO e se já existe em Scores
+    const feito = String(patRow[`${CODE}_FEITO`]||"").toLowerCase()==="sim";
+    if(feito) { setMsg("Você já enviou este formulário. Redirecionando…", true); setTimeout(()=>location.href=REDIRECT_URL, 1200); return; }
+    const exists = await sheetSearch(SHEETS.SCORES, { cpf, code: CODE });
+    if(exists && exists.length){
+      setMsg("Você já enviou este formulário. Redirecionando…", true);
+      setTimeout(()=>{ window.location.href = REDIRECT_URL; }, 1200);
+      return;
+    }
+
+    // coleta pontuação total
+    let total = 0;
+    for(let i=1;i<=21;i++){
+      const qn = String(i).padStart(2,"0");
+      const sel = document.querySelector(`input[name="q${qn}"]:checked`);
+      if(!sel){ throw new Error(`Responda a questão ${i}.`); }
+      total += Number(sel.value);
+    }
+    const cat = categoria(total);
+
+    // 3) salva APENAS total + categoria
+    await sheetCreate(SHEETS.SCORES, {
+      result_id: `${cpf}_${CODE}_${Date.now()}`,
+      cpf, code: CODE, source: "paciente",
+      submitted_at: new Date().toISOString(),
+      total, categoria: cat
+    });
+
+    // 4) marca FEITO
+    await sheetPatchBy(SHEETS.PATIENTS, "cpf", cpf, { [`${CODE}_FEITO`]: "sim" });
+
+    // 5) ok + redireciona
+    setMsg("Formulário preenchido. respostas enviadas.", true);
+    setTimeout(()=>{ window.location.href = REDIRECT_URL; }, 1200);
+
+  }catch(err){
+    console.error(err);
+    setMsg(err.message || "Falha ao enviar. Tente novamente.", false);
+    // libera para o usuário tentar de novo
+    sending = false;
+    btn.disabled = false;
+    btn.textContent = originalText;
+    return;
+  }
+});
+</script>
+</body>
+</html>
