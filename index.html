@@ -171,6 +171,21 @@
     border:1px solid var(--warn-border);
     color:var(--warn-text);
   }
+
+  /* Progresso */
+  .progress{
+    height:10px;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:999px;
+    overflow:hidden;
+    margin-top:4px;
+  }
+  .bar{
+    height:100%;
+    width:0%;
+    background:linear-gradient(90deg,var(--pri),var(--ok));
+  }
 </style>
 </head>
 <body>
@@ -187,15 +202,23 @@
     <!-- Dados do paciente (preenchidos via token) -->
     <div id="pacInfo" class="grid-info" style="display:none;"></div>
 
-    <form id="form" style="margin-top:14px; display:none;">
+    <!-- Progresso -->
+    <div id="progressWrap" style="display:none; gap:8px; align-items:center; margin:8px 0 0;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px">
+        <span class="muted" id="progressText">Progresso: 0/21</span>
+      </div>
+      <div class="progress"><div class="bar" id="bar"></div></div>
+    </div>
+
+    <form id="form" style="margin-top:14px; display:none;" novalidate>
       <div id="qs"></div>
       <div style="margin-top:14px">
         <button id="btnSubmit" class="btn ok" type="submit">Enviar respostas</button>
       </div>
-      <div id="msg" class="msg" style="display:none"></div>
+      <div id="msg" class="msg" style="display:none" role="alert" aria-live="polite"></div>
     </form>
 
-    <div id="alert" class="msg" style="display:none"></div>
+    <div id="alert" class="msg" style="display:none" role="alert" aria-live="assertive"></div>
   </div>
 </div>
 
@@ -355,12 +378,18 @@ function categoria(total){
   return "severa";
 }
 
+function getChoiceLabelByValue(v){
+  const c = CHOICES.find(o=>o.value===v);
+  return c ? c.label : String(v);
+}
+
 function renderQuestions(){
   const host = $("#qs"); host.innerHTML="";
   ITEMS.forEach((text, idx)=>{
     const qn = String(idx+1).padStart(2,"0");
     const wrap = document.createElement("div");
     wrap.className="q";
+    wrap.setAttribute("data-q", String(idx+1));
     wrap.innerHTML = `<h3>${idx+1}. ${text}</h3>`;
 
     const opts = document.createElement("div");
@@ -381,10 +410,71 @@ function renderQuestions(){
   });
 }
 
+// ======== PROGRESSO ========
+function countAnswered(){
+  let c = 0;
+  for(let i=1;i<=ITEMS.length;i++){
+    const qn = String(i).padStart(2,"0");
+    if(document.querySelector(`input[name="q${qn}"]:checked`)) c++;
+  }
+  return c;
+}
+function updateProgress(){
+  const answered = countAnswered();
+  const total = ITEMS.length;
+  const txt = $("#progressText");
+  const bar = $("#bar");
+  if(txt) txt.textContent = `Progresso: ${answered}/${total}`;
+  if(bar) bar.style.width = `${(answered/total)*100}%`;
+}
+
+// Progresso reage às mudanças de rádio
+addEventListener("change", e=>{
+  if(e.target && e.target.matches('input[type="radio"][name^="q"]')){
+    updateProgress();
+  }
+});
+
+// ======== MAPAS DE RESPOSTAS / QUESTIONS JSON ========
+function collectAnswersMap(){
+  const ans = {};
+  for(let i=1;i<=ITEMS.length;i++){
+    const qn = String(i).padStart(2,"0");
+    const sel = document.querySelector(`input[name="q${qn}"]:checked`);
+    ans[qn] = sel ? Number(sel.value) : null;
+  }
+  return ans;
+}
+
+function collectQuestionsReadable(){
+  const obj = {};
+  for(let i=1;i<=ITEMS.length;i++){
+    const qn = String(i).padStart(2,"0");
+    const stem = ITEMS[i-1] || "";
+    const sel = document.querySelector(`input[name="q${qn}"]:checked`);
+    if(sel){
+      const valNum = Number(sel.value);
+      obj[qn] = {
+        stem,
+        value: valNum,
+        label: getChoiceLabelByValue(valNum)
+      };
+    }else{
+      obj[qn] = {
+        stem,
+        value: null,
+        label: ""
+      };
+    }
+  }
+  return obj;
+}
+
 // ======== ESTADO ========
 let patient = null;     // linha de Patients
 let tokenRow = null;    // linha de LinkTokens
 let CPF = "";           // do token
+let startAt = Date.now();
 
 // ======== BOOT POR TOKEN ========
 (async function boot(){
@@ -433,7 +523,11 @@ let CPF = "";           // do token
     renderQuestions();
     $("#pacInfo").style.display = "grid";
     $("#form").style.display = "block";
+    $("#progressWrap").style.display = "block";
+    updateProgress();
     hideBox("#alert");
+
+    startAt = Date.now();
 
   }catch(err){
     console.error(err);
@@ -458,7 +552,7 @@ function renderPatientInfo(){
   }
 }
 
-// ======== SUBMIT (com trava contra clique duplo) ========
+// ======== SUBMIT (com trava + itens faltando) ========
 let sending = false;
 
 $("#form").addEventListener("submit", async (e)=>{
@@ -475,28 +569,60 @@ $("#form").addEventListener("submit", async (e)=>{
   try{
     if(!patient) throw new Error("Sessão inválida. Recarregue o link.");
 
+    // valida todas as questões
+    const missing = [];
+    let firstMissingRow = null;
+    for(let i=1;i<=ITEMS.length;i++){
+      const qn = String(i).padStart(2,"0");
+      const sel = document.querySelector(`input[name="q${qn}"]:checked`);
+      if(!sel){
+        missing.push(i);
+        if(!firstMissingRow){
+          const row = document.querySelector(`.q[data-q="${i}"]`);
+          if(row) firstMissingRow = row;
+        }
+      }
+    }
+    if(missing.length){
+      if(firstMissingRow){
+        firstMissingRow.scrollIntoView({behavior:"smooth", block:"center"});
+      }
+      throw new Error(`Você ainda não respondeu os itens: ${missing.join(", ")}.`);
+    }
+
+    // segurança extra: checar se já foi enviado (duplo clique, etc.)
+    const again = await sheetSearch(SHEETS.SCORES, { cpf: CPF, code: CODE });
+    if(again && again.length){
+      setBox("#msg","Este formulário já foi enviado anteriormente. Voltando ao portal…","ok");
+      setTimeout(goPortalWithToken, 1100);
+      return;
+    }
+
     // coleta respostas e soma total
     let total = 0;
-  const qaList = []; // será salvo em 'questions' no formato { "Pergunta": "Resposta" }
-for(let i=1;i<=ITEMS.length;i++){
-  const qn = String(i).padStart(2,"0");
-  const sel = document.querySelector(`input[name="q${qn}"]:checked`);
-  if(!sel){
-    throw new Error(`Responda a questão ${i}.`);
-  }
-  const rawVal = Number(sel.value); // 0..3
-  total += rawVal;
-
-  const choice = CHOICES.find(o=>o.value===rawVal);
-  const obj = {};
-  obj[ITEMS[i-1]] = choice ? choice.label : String(rawVal);
-  qaList.push(obj);
-}
-
+    for(let i=1;i<=ITEMS.length;i++){
+      const qn = String(i).padStart(2,"0");
+      const sel = document.querySelector(`input[name="q${qn}"]:checked`);
+      const rawVal = sel ? Number(sel.value) : 0;
+      total += rawVal;
+    }
 
     const cat = categoria(total); // mínimo/leve/moderada/severa
 
-    // salva score completo (questions = só perguntas + respostas)
+    // JSON padronizado para PDF / análise
+    const answersMap = collectAnswersMap();
+    const questionsReadable = collectQuestionsReadable();
+    const durationSec = Math.round((Date.now() - startAt)/1000);
+
+    const metricsObj = {
+      total,
+      categoria: cat,
+      duration_sec: durationSec,
+      answers: answersMap,
+      answers_readable: questionsReadable
+    };
+
+    // salva score completo
     await sheetCreate(SHEETS.SCORES, {
       result_id: `${patient.cpf}_${CODE}_${Date.now()}`,
       token: qs("token"),
@@ -505,9 +631,9 @@ for(let i=1;i<=ITEMS.length;i++){
       source: "paciente",
       submitted_at: new Date().toISOString(),
       total,
-      categoria: cat,
+      categoria: cat, // texto simples (mínimo/leve/etc.) – apps script pode usar direto
       metrics: "",
-      questions: JSON.stringify(qaList)
+      questions: JSON.stringify(questionsReadable)
     });
 
     // marca como FEITO
