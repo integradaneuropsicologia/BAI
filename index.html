@@ -3,655 +3,768 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>BAI – Inventário de Ansiedade de Beck</title>
+<title>BAI_V2 - Inventário de Ansiedade de Beck</title>
 <style>
   :root{
-    /* TEMA CLARO (padrão) */
-    --bg:#f3f4f6;
+    --bg:#f4f6f8;
     --card:#ffffff;
-    --line:#e5e7eb;
-    --text:#0f172a;
-    --muted:#6b7280;
-    --pri:#4f46e5;
-    --ok:#16a34a;
+    --line:#d9e0e7;
+    --text:#111827;
+    --muted:#64748b;
+    --surface:#f8fafc;
+    --chip:#eef6f8;
+    --chip-border:#cfe2e8;
+    --pri:#176b7a;
+    --pri-strong:#11515d;
+    --ok:#15803d;
     --err:#b91c1c;
-    --surface:#f9fafb;
-    --chip:#eef2ff;
+    --warn:#b45309;
     --ok-bg:#ecfdf3;
     --ok-border:#bbf7d0;
     --ok-text:#166534;
-    --err-bg:#fef2f2;
-    --err-border:#fecaca;
-    --err-text:#7f1d1d;
+    --err-bg:#fff1f2;
+    --err-border:#fecdd3;
+    --err-text:#9f1239;
     --warn-bg:#fffbeb;
-    --warn-border:#fef3c7;
+    --warn-border:#fde68a;
     --warn-text:#92400e;
-  }
-
-  /* TEMA ESCURO */
-  [data-theme="dark"]{
-    --bg:#0f172a;
-    --card:#111827;
-    --line:#1f2937;
-    --text:#e5e7eb;
-    --muted:#94a3b8;
-    --pri:#4f46e5;
-    --ok:#22c55e;
-    --err:#ef4444;
-    --surface:#0b1220;
-    --chip:#020617;
-    --ok-bg:#052e1a;
-    --ok-border:#114d2a;
-    --ok-text:#b3f7c1;
-    --err-bg:#3b0d0d;
-    --err-border:#5b1919;
-    --err-text:#ffd0d0;
-    --warn-bg:#3a2903;
-    --warn-border:#5b4307;
-    --warn-text:#ffe6b0;
   }
 
   *{box-sizing:border-box}
   body{
     margin:0;
+    min-height:100vh;
     background:var(--bg);
     color:var(--text);
-    font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto;
+    font:16px/1.55 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,sans-serif;
     -webkit-font-smoothing:antialiased;
     -moz-osx-font-smoothing:grayscale;
-    transition:background .2s ease,color .2s ease;
   }
-  .wrap{max-width:960px;margin:24px auto;padding:0 16px}
+  .wrap{max-width:980px;margin:22px auto;padding:0 16px}
   .card{
     background:var(--card);
     border:1px solid var(--line);
-    border-radius:14px;
-    padding:18px;
-    box-shadow:0 18px 40px rgba(15,23,42,.15);
+    border-radius:12px;
+    box-shadow:0 18px 36px rgba(15,23,42,.12);
+    overflow:hidden;
   }
-
   .header{
-    display:flex;
-    align-items:flex-start;
-    justify-content:space-between;
-    gap:12px;
-    margin-bottom:6px;
+    padding:20px;
+    border-bottom:1px solid var(--line);
+    background:#fbfdfe;
   }
-  .header-main{flex:1 1 auto}
-  h1{margin:0 0 6px;font-size:1.35rem}
-  .muted{color:var(--muted);margin:0}
-  @media(max-width:600px){
-    .header{flex-direction:column-reverse;align-items:flex-start}
-  }
-
-  .theme-btn{
-    align-self:flex-start;
-    padding:8px 12px;
-    border-radius:999px;
+  h1{margin:0 0 6px;font-size:1.45rem;letter-spacing:0}
+  .muted{margin:0;color:var(--muted)}
+  .content{padding:18px 20px 20px}
+  .hidden{display:none !important}
+  .status,.msg{
     border:1px solid var(--line);
-    background:transparent;
-    color:var(--text);
-    font-size:.85rem;
-    cursor:pointer;
-    display:inline-flex;
-    align-items:center;
-    gap:6px;
-    white-space:nowrap;
+    border-radius:10px;
+    padding:12px;
+    margin:12px 0;
+    font-size:.94rem;
   }
-  .theme-btn:hover{background:var(--surface)}
-
-  .grid-info{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0 6px}
+  .status.loading{background:#eef6ff;border-color:#bfdbfe;color:#1d4ed8}
+  .status.ok,.msg.ok{background:var(--ok-bg);border-color:var(--ok-border);color:var(--ok-text)}
+  .status.err,.msg.err{background:var(--err-bg);border-color:var(--err-border);color:var(--err-text)}
+  .status.warn,.msg.warn{background:var(--warn-bg);border-color:var(--warn-border);color:var(--warn-text)}
+  .grid-info{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0}
   @media(max-width:720px){.grid-info{grid-template-columns:1fr}}
-
   .info{
     background:var(--surface);
     border:1px solid var(--line);
     border-radius:10px;
-    padding:10px;
+    padding:12px;
   }
   .info b{
     display:block;
     margin-bottom:4px;
     color:var(--muted);
-    font-size:.8rem;
+    font-size:.78rem;
     text-transform:uppercase;
     letter-spacing:.03em;
   }
-
-  .q{
-    border:1px solid var(--line);
-    border-radius:12px;
-    padding:12px;
-    background:var(--surface);
-    margin-bottom:10px;
-  }
-  .q h3{margin:0 0 8px;font-size:1rem}
-
-  .opts{display:flex;flex-wrap:wrap;gap:10px}
-  .opt{
-    display:flex;
-    align-items:center;
-    gap:6px;
-    padding:8px 10px;
-    border:1px solid var(--line);
-    border-radius:10px;
-    background:var(--chip);
-    font-size:.9rem;
-  }
-  .opt input{margin:0}
-
-  .btn{
-    display:inline-flex;
-    align-items:center;
+  .legend{
+    display:grid;
+    grid-template-columns:repeat(4, minmax(0, 1fr));
     gap:8px;
-    background:var(--pri);
-    border:none;
-    color:#fff;
-    padding:10px 14px;
+    margin:10px 0 16px;
+  }
+  @media(max-width:760px){.legend{grid-template-columns:1fr 1fr}}
+  @media(max-width:460px){.legend{grid-template-columns:1fr}}
+  .legend span{
+    border:1px solid var(--line);
     border-radius:10px;
-    cursor:pointer;
-    font-weight:500;
+    padding:9px 10px;
+    background:var(--surface);
+    color:var(--muted);
+    font-size:.88rem;
   }
-  .btn.ok{background:var(--ok)}
-  .btn:disabled{opacity:.6;cursor:not-allowed}
-
-  .msg{margin:10px 0;padding:10px;border-radius:8px;font-size:.9rem}
-  .okbox{
-    background:var(--ok-bg);
-    border:1px solid var(--ok-border);
-    color:var(--ok-text);
-  }
-  .errbox{
-    background:var(--err-bg);
-    border:1px solid var(--err-border);
-    color:var(--err-text);
-  }
-  .warnbox{
-    background:var(--warn-bg);
-    border:1px solid var(--warn-border);
-    color:var(--warn-text);
-  }
-
-  /* Progresso */
   .progress{
     height:10px;
     background:var(--surface);
     border:1px solid var(--line);
     border-radius:999px;
     overflow:hidden;
-    margin-top:4px;
+    margin-top:6px;
   }
   .bar{
+    width:0;
     height:100%;
-    width:0%;
-    background:linear-gradient(90deg,var(--pri),var(--ok));
+    background:linear-gradient(90deg,var(--pri),#22c55e);
   }
+  .question{
+    border:1px solid var(--line);
+    background:#fff;
+    border-radius:10px;
+    padding:14px;
+    margin-bottom:12px;
+  }
+  .question.invalid{
+    border-color:var(--err);
+    background:#fff7f8;
+  }
+  .question-title{
+    margin:0 0 10px;
+    font-size:1rem;
+    font-weight:700;
+  }
+  .options{
+    display:grid;
+    grid-template-columns:repeat(4, minmax(0, 1fr));
+    gap:10px;
+  }
+  @media(max-width:840px){.options{grid-template-columns:1fr 1fr}}
+  @media(max-width:540px){.options{grid-template-columns:1fr}}
+  .option{
+    display:flex;
+    align-items:center;
+    gap:9px;
+    min-height:48px;
+    padding:10px 12px;
+    border:1px solid var(--chip-border);
+    border-radius:10px;
+    background:var(--chip);
+    cursor:pointer;
+  }
+  .option input{margin:0;accent-color:var(--pri)}
+  .option:has(input:checked){
+    border-color:var(--pri);
+    background:#dff3f5;
+  }
+  .actions{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-top:16px;
+    border-top:1px solid var(--line);
+    padding-top:16px;
+  }
+  .btn{
+    border:0;
+    border-radius:10px;
+    padding:12px 16px;
+    font-weight:700;
+    cursor:pointer;
+    background:var(--pri);
+    color:#fff;
+  }
+  .btn:hover{background:var(--pri-strong)}
+  .btn.ghost{
+    background:#eef6f8;
+    color:var(--pri-strong);
+    border:1px solid var(--chip-border);
+  }
+  .btn:disabled{opacity:.65;cursor:not-allowed}
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="card">
-    <div class="header">
-      <div class="header-main">
-        <h1>BAI – Inventário de Ansiedade de Beck</h1>
-        <p class="muted">Marque o quanto cada sintoma lhe incomodou na <strong>última semana</strong>, incluindo hoje.</p>
+    <header class="header">
+      <h1>BAI - Inventário de Ansiedade de Beck</h1>
+      <p class="muted">Marque o quanto cada sintoma afetou você durante a última semana, incluindo hoje.</p>
+    </header>
+
+    <main class="content">
+      <div id="statusBox" class="status loading">Carregando formulário...</div>
+      <div id="metaInfo" class="legend hidden"></div>
+      <div id="pacInfo" class="grid-info hidden"></div>
+
+      <div id="progressWrap" class="hidden">
+        <p id="progressText" class="muted">Progresso: 0/21</p>
+        <div class="progress"><div id="bar" class="bar"></div></div>
       </div>
-      <button id="themeToggle" class="theme-btn" type="button">🌙 Modo escuro</button>
-    </div>
 
-    <!-- Dados do paciente (preenchidos via token) -->
-    <div id="pacInfo" class="grid-info" style="display:none;"></div>
-
-    <!-- Progresso -->
-    <div id="progressWrap" style="display:none; gap:8px; align-items:center; margin:8px 0 0;">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px">
-        <span class="muted" id="progressText">Progresso: 0/21</span>
-      </div>
-      <div class="progress"><div class="bar" id="bar"></div></div>
-    </div>
-
-    <form id="form" style="margin-top:14px; display:none;" novalidate>
-      <div id="qs"></div>
-      <div style="margin-top:14px">
-        <button id="btnSubmit" class="btn ok" type="submit">Enviar respostas</button>
-      </div>
-      <div id="msg" class="msg" style="display:none" role="alert" aria-live="polite"></div>
-    </form>
-
-    <div id="alert" class="msg" style="display:none" role="alert" aria-live="assertive"></div>
+      <form id="testForm" class="hidden" novalidate>
+        <div class="legend" aria-label="Opções de resposta">
+          <span>Nada / ausência do sintoma</span>
+          <span>Levemente</span>
+          <span>Moderadamente</span>
+          <span>Gravemente / quase insuportável</span>
+        </div>
+        <div id="questions"></div>
+        <div class="actions">
+          <button id="submitBtn" class="btn" type="submit">Enviar respostas</button>
+          <button id="clearDraft" class="btn ghost" type="button">Limpar rascunho</button>
+        </div>
+        <div id="msgBox" class="msg hidden" role="alert" aria-live="polite"></div>
+      </form>
+    </main>
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-// ======== CONFIG ========
-const SHEETDB_BASE = "https://sheetdb.io/api/v1/8pmdh33s9fvy8";
-const SHEETS = { PATIENTS:"Patients", TOKENS:"LinkTokens", SCORES:"Scores_BAI" };
-const CODE = "BAI";
+  const SUPABASE_URL = "https://ydypdeafbcdcamwigjuq.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_lg9teAniku65cd2dnZJvIQ_Zii0XneZ";
+  const AREA_PACIENTE_URL = "https://integradaneuropsicologia.github.io/area-do-paciente-v2/";
+  const TEST_CODE_FIXO = "BAI_V2";
 
-// Hub para onde voltar com o token
-const PORTAL_URL = "https://integradaneuropsicologia.github.io/formularios/";
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// ======== HELPERS ========
-const $ = s => document.querySelector(s);
-const onlyDigits = s => (s||"").replace(/\D+/g,"");
-const qs = k => new URLSearchParams(location.search).get(k) || "";
-
-// ======== TEMA CLARO/ESCURO ========
-const THEME_KEY = "bai_theme";
-
-function applyTheme(theme){
-  const root = document.documentElement;
-  root.setAttribute("data-theme", theme);
-  const btn = $("#themeToggle");
-  if(btn){
-    btn.textContent = theme === "dark" ? "☀️ Modo claro" : "🌙 Modo escuro";
-  }
-}
-
-function initTheme(){
-  let theme = "light";
-  try{
-    const saved = localStorage.getItem(THEME_KEY);
-    if(saved === "dark" || saved === "light") theme = saved;
-  }catch(_){}
-  applyTheme(theme);
-
-  const btn = $("#themeToggle");
-  if(btn){
-    btn.addEventListener("click", ()=>{
-      const current = document.documentElement.getAttribute("data-theme") || "light";
-      const next = current === "dark" ? "light" : "dark";
-      applyTheme(next);
-      try{ localStorage.setItem(THEME_KEY, next); }catch(_){}
-    });
-  }
-}
-
-if(document.readyState === "loading"){
-  document.addEventListener("DOMContentLoaded", initTheme);
-}else{
-  initTheme();
-}
-
-function setBox(id, text, kind="ok"){
-  const el = $(id); if(!el) return;
-  el.textContent = text;
-  el.className = "msg " + (kind==="ok"?"okbox":kind==="warn"?"warnbox":"errbox");
-  el.style.display = "block";
-}
-function hideBox(id){
-  const el=$(id); if(el){
-    el.style.display="none";
-    el.textContent="";
-  }
-}
-function maskCPF(cpf){
-  const d = onlyDigits(cpf||"");
-  if(d.length!==11) return cpf||"";
-  return `${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6,9)}-${d.slice(9)}`;
-}
-function fmtDateISO(iso){
-  if(!iso) return "";
-  const [y,m,d] = iso.split("-");
-  if(!y||!m||!d) return iso;
-  return `${d}/${m}/${y}`;
-}
-
-async function GET(url){
-  const r=await fetch(url);
-  if(!r.ok) throw new Error("HTTP "+r.status);
-  return r.json();
-}
-async function sheetSearch(sheet, params){
-  const usp = new URLSearchParams(params);
-  return GET(`${SHEETDB_BASE}/search?sheet=${encodeURIComponent(sheet)}&${usp.toString()}`);
-}
-async function sheetCreate(sheet, row){
-  const r = await fetch(`${SHEETDB_BASE}?sheet=${encodeURIComponent(sheet)}`, {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({ data:[row] })
-  });
-  if(!r.ok) throw new Error(await r.text());
-  return r.json();
-}
-async function sheetPatchBy(sheet, column, value, data){
-  const r = await fetch(`${SHEETDB_BASE}/${encodeURIComponent(column)}/${encodeURIComponent(value)}?sheet=${encodeURIComponent(sheet)}`, {
-    method:"PATCH",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({ data })
-  });
-  if(!r.ok) throw new Error(await r.text());
-  return r.json();
-}
-
-// voltar ao portal com o mesmo token
-function goPortalWithToken(){
-  const TOKEN = qs("token");
-  try{
-    const u = new URL(PORTAL_URL, location.href);
-    u.searchParams.set("token", TOKEN);
-    location.href = u.toString();
-  }catch(_){
-    const sep = PORTAL_URL.includes("?") ? "&" : "?";
-    location.href = PORTAL_URL + sep + "token=" + encodeURIComponent(TOKEN);
-  }
-}
-
-// ======== ITENS/OPÇÕES ========
-const ITEMS = [
-  "Dormência ou formigamento.",
-  "Sensação de calor.",
-  "Tremores nas pernas.",
-  "Incapaz de relaxar.",
-  "Medo que aconteça o pior.",
-  "Atordoado ou tonto.",
-  "Palpitação ou aceleração do coração.",
-  "Sem equilíbrio.",
-  "Aterrorizado.",
-  "Nervoso.",
-  "Sensação de sufocação.",
-  "Tremores nas mãos.",
-  "Trêmulo.",
-  "Medo de perder o controle.",
-  "Dificuldade de respirar.",
-  "Medo de morrer.",
-  "Assustado.",
-  "Indigestão ou desconforto no abdômen.",
-  "Sensação de desmaio.",
-  "Rosto afogueado.",
-  "Suor (não devido ao calor)."
-];
-
-const CHOICES = [
-  {label:"Absolutamente não", value:0},
-  {label:"Levemente",         value:1},
-  {label:"Moderadamente",     value:2},
-  {label:"Gravemente",        value:3},
-];
-
-// categorização clínica padrão
-function categoria(total){
-  if(total <= 10) return "mínimo";
-  if(total <= 19) return "leve";
-  if(total <= 30) return "moderada";
-  return "severa";
-}
-
-function getChoiceLabelByValue(v){
-  const c = CHOICES.find(o=>o.value===v);
-  return c ? c.label : String(v);
-}
-
-function renderQuestions(){
-  const host = $("#qs"); host.innerHTML="";
-  ITEMS.forEach((text, idx)=>{
-    const qn = String(idx+1).padStart(2,"0");
-    const wrap = document.createElement("div");
-    wrap.className="q";
-    wrap.setAttribute("data-q", String(idx+1));
-    wrap.innerHTML = `<h3>${idx+1}. ${text}</h3>`;
-
-    const opts = document.createElement("div");
-    opts.className="opts";
-
-    CHOICES.forEach(c=>{
-      const id=`q${qn}_${c.value}`;
-      const lab=document.createElement("label"); lab.className="opt";
-      lab.innerHTML = `
-        <input type="radio" name="q${qn}" id="${id}" value="${c.value}" required>
-        <span>${c.label}</span>
-      `;
-      opts.appendChild(lab);
-    });
-
-    wrap.appendChild(opts);
-    host.appendChild(wrap);
-  });
-}
-
-// ======== PROGRESSO ========
-function countAnswered(){
-  let c = 0;
-  for(let i=1;i<=ITEMS.length;i++){
-    const qn = String(i).padStart(2,"0");
-    if(document.querySelector(`input[name="q${qn}"]:checked`)) c++;
-  }
-  return c;
-}
-function updateProgress(){
-  const answered = countAnswered();
-  const total = ITEMS.length;
-  const txt = $("#progressText");
-  const bar = $("#bar");
-  if(txt) txt.textContent = `Progresso: ${answered}/${total}`;
-  if(bar) bar.style.width = `${(answered/total)*100}%`;
-}
-
-// Progresso reage às mudanças de rádio
-addEventListener("change", e=>{
-  if(e.target && e.target.matches('input[type="radio"][name^="q"]')){
-    updateProgress();
-  }
-});
-
-// ======== MAPAS DE RESPOSTAS / QUESTIONS JSON ========
-function collectAnswersMap(){
-  const ans = {};
-  for(let i=1;i<=ITEMS.length;i++){
-    const qn = String(i).padStart(2,"0");
-    const sel = document.querySelector(`input[name="q${qn}"]:checked`);
-    ans[qn] = sel ? Number(sel.value) : null;
-  }
-  return ans;
-}
-
-function collectQuestionsReadable(){
-  const obj = {};
-  for(let i=1;i<=ITEMS.length;i++){
-    const qn = String(i).padStart(2,"0");
-    const stem = ITEMS[i-1] || "";
-    const sel = document.querySelector(`input[name="q${qn}"]:checked`);
-    if(sel){
-      const valNum = Number(sel.value);
-      obj[qn] = {
-        stem,
-        value: valNum,
-        label: getChoiceLabelByValue(valNum)
-      };
-    }else{
-      obj[qn] = {
-        stem,
-        value: null,
-        label: ""
-      };
-    }
-  }
-  return obj;
-}
-
-// ======== ESTADO ========
-let patient = null;     // linha de Patients
-let tokenRow = null;    // linha de LinkTokens
-let CPF = "";           // do token
-let startAt = Date.now();
-
-// ======== BOOT POR TOKEN ========
-(async function boot(){
-  try{
-    const TOKEN = qs("token");
-    if(!TOKEN){
-      setBox("#alert","Link inválido (sem token). Solicite um novo link.","err");
-      return;
-    }
-
-    // 1) valida token
-    const trows = await sheetSearch(SHEETS.TOKENS, { token: TOKEN });
-    if(!trows || !trows.length) throw new Error("Token inválido ou expirado.");
-    tokenRow = trows[0];
-
-    const disabled = String(tokenRow.disabled||"não").toLowerCase()==="sim";
-    const expired  = tokenRow.expires_at && (new Date(tokenRow.expires_at) < new Date());
-    if(disabled || expired) throw new Error("Token desativado/expirado. Peça um novo link.");
-
-    CPF = onlyDigits(tokenRow.cpf||"");
-    if(!CPF) throw new Error("Token sem CPF vinculado.");
-
-    // 2) carrega paciente
-    const prows = await sheetSearch(SHEETS.PATIENTS, { cpf: CPF });
-    if(!prows || !prows.length) throw new Error("Paciente não encontrado.");
-    patient = prows[0];
-
-    // 3) verifica liberação
-    const allowed = String(patient[CODE]||"").toLowerCase()==="sim";
-    if(!allowed){
-      setBox("#alert","Este formulário não está liberado para você. Entre em contato com o consultório.","err");
-      return;
-    }
-
-    // 4) bloqueia se já fez
-    const flagDone = String(patient[`${CODE}_FEITO`]||"").toLowerCase()==="sim";
-    const already = await sheetSearch(SHEETS.SCORES, { cpf: CPF, code: CODE });
-    if(flagDone || (already && already.length)){
-      setBox("#alert","Você já respondeu este formulário. Voltando ao portal…","ok");
-      setTimeout(goPortalWithToken, 1200);
-      return;
-    }
-
-    // 5) render dados + perguntas
-    renderPatientInfo();
-    renderQuestions();
-    $("#pacInfo").style.display = "grid";
-    $("#form").style.display = "block";
-    $("#progressWrap").style.display = "block";
-    updateProgress();
-    hideBox("#alert");
-
-    startAt = Date.now();
-
-  }catch(err){
-    console.error(err);
-    setBox("#alert", err.message || "Falha ao abrir o formulário. Tente novamente mais tarde.", "err");
-  }
-})();
-
-function renderPatientInfo(){
-  const g = $("#pacInfo"); g.innerHTML="";
-  const info = [
-    ["Nome", patient.nome || "-"],
-    ["CPF", maskCPF(patient.cpf)],
-    ["Nascimento", fmtDateISO(patient.data_nascimento)],
-    ["E-mail", patient.email || "-"],
-    ["WhatsApp", patient.whatsapp || "-"],
+  const ITEMS = [
+    "Formigamento ou dormência",
+    "Sensação de calor",
+    "Fraqueza nas pernas",
+    "Incapacidade de relaxar",
+    "Medo de que aconteça o pior",
+    "Tontura ou vertigem",
+    "Palpitações ou taquicardia",
+    "Sensação de instabilidade",
+    "Sensação de estar aterrorizado",
+    "Nervosismo",
+    "Sensação de sufocamento / falta de ar",
+    "Tremor nas mãos",
+    "Tremor generalizado ou estremecimento",
+    "Medo de perder o controle",
+    "Dificuldade para respirar",
+    "Medo de morrer",
+    "Sentir-se assustado",
+    "Indigestão ou desconforto abdominal",
+    "Sensação de que vai desmaiar",
+    "Rubor facial / ficar vermelho",
+    "Sudorese não relacionada ao calor"
   ];
-  for(const [k,v] of info){
-    const div = document.createElement("div");
-    div.className = "info";
-    div.innerHTML = `<b>${k}</b><div>${v||"-"}</div>`;
-    g.appendChild(div);
+
+  const CHOICES = [
+    { label: "Nada / ausência do sintoma", value: 0 },
+    { label: "Levemente", value: 1 },
+    { label: "Moderadamente", value: 2 },
+    { label: "Gravemente / quase insuportável", value: 3 }
+  ];
+
+  const $ = (selector) => document.querySelector(selector);
+  const STORAGE_KEY = `BAI_V2_${getTokenFromUrl() || "anon"}`;
+
+  function setStatus(text, type = "loading") {
+    const el = $("#statusBox");
+    el.textContent = text;
+    el.className = `status ${type}`;
   }
-}
 
-// ======== SUBMIT (com trava + itens faltando) ========
-let sending = false;
+  function setMessage(text, type = "err") {
+    const el = $("#msgBox");
+    el.textContent = text;
+    el.className = `msg ${type}`;
+    el.classList.remove("hidden");
+  }
 
-$("#form").addEventListener("submit", async (e)=>{
-  e.preventDefault();
-  if(sending) return;
-  sending = true;
-  hideBox("#msg");
+  function clearMessage() {
+    const el = $("#msgBox");
+    el.textContent = "";
+    el.className = "msg hidden";
+  }
 
-  const btn = $("#btnSubmit");
-  const originalText = btn.textContent;
-  btn.disabled = true;
-  btn.textContent = "Enviando…";
+  function normalizeCPF(cpf) {
+    return String(cpf || "").replace(/\D/g, "");
+  }
 
-  try{
-    if(!patient) throw new Error("Sessão inválida. Recarregue o link.");
+  function getTokenFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    return String(params.get("token") || params.get("t") || "").trim();
+  }
 
-    // valida todas as questões
-    const missing = [];
-    let firstMissingRow = null;
-    for(let i=1;i<=ITEMS.length;i++){
-      const qn = String(i).padStart(2,"0");
-      const sel = document.querySelector(`input[name="q${qn}"]:checked`);
-      if(!sel){
-        missing.push(i);
-        if(!firstMissingRow){
-          const row = document.querySelector(`.q[data-q="${i}"]`);
-          if(row) firstMissingRow = row;
+  function getCpfFromUrl() {
+    if (window.__patientFormAccess?.cpf) return normalizeCPF(window.__patientFormAccess.cpf);
+    const params = new URLSearchParams(window.location.search);
+    const legacyCpf = params.get("cpf");
+    if (legacyCpf) return normalizeCPF(legacyCpf);
+    const raw = window.location.search.replace("?", "").trim();
+    if (/^\d{11}$/.test(raw)) return raw;
+    return "";
+  }
+
+  function getTestCodeFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("form") || params.get("code") || TEST_CODE_FIXO;
+  }
+
+  function isObject(value) {
+    return value && typeof value === "object" && !Array.isArray(value);
+  }
+
+  function containsTestCode(jsonb, testCode) {
+    if (!jsonb) return false;
+    if (typeof jsonb === "string") return jsonb === testCode;
+    if (Array.isArray(jsonb)) {
+      return jsonb.some(item => {
+        if (typeof item === "string") return item === testCode;
+        if (isObject(item)) {
+          return item.code === testCode || item.test_code === testCode || item.id === testCode || containsTestCode(item, testCode);
         }
+        return false;
+      });
+    }
+    if (isObject(jsonb)) {
+      if (Object.prototype.hasOwnProperty.call(jsonb, testCode)) {
+        const value = jsonb[testCode];
+        return value !== false && value !== null && value !== undefined;
       }
+      if (jsonb.code === testCode || jsonb.test_code === testCode || jsonb.id === testCode) return true;
+      return Object.values(jsonb).some(v => containsTestCode(v, testCode));
     }
-    if(missing.length){
-      if(firstMissingRow){
-        firstMissingRow.scrollIntoView({behavior:"smooth", block:"center"});
-      }
-      throw new Error(`Você ainda não respondeu os itens: ${missing.join(", ")}.`);
-    }
-
-    // segurança extra: checar se já foi enviado (duplo clique, etc.)
-    const again = await sheetSearch(SHEETS.SCORES, { cpf: CPF, code: CODE });
-    if(again && again.length){
-      setBox("#msg","Este formulário já foi enviado anteriormente. Voltando ao portal…","ok");
-      setTimeout(goPortalWithToken, 1100);
-      return;
-    }
-
-    // coleta respostas e soma total
-    let total = 0;
-    for(let i=1;i<=ITEMS.length;i++){
-      const qn = String(i).padStart(2,"0");
-      const sel = document.querySelector(`input[name="q${qn}"]:checked`);
-      const rawVal = sel ? Number(sel.value) : 0;
-      total += rawVal;
-    }
-
-    const cat = categoria(total); // mínimo/leve/moderada/severa
-
-    // JSON padronizado para PDF / análise
-    const answersMap = collectAnswersMap();
-    const questionsReadable = collectQuestionsReadable();
-    const durationSec = Math.round((Date.now() - startAt)/1000);
-
-    const metricsObj = {
-      total,
-      categoria: cat,
-      duration_sec: durationSec,
-      answers: answersMap,
-      answers_readable: questionsReadable
-    };
-
-    // salva score completo
-    await sheetCreate(SHEETS.SCORES, {
-      result_id: `${patient.cpf}_${CODE}_${Date.now()}`,
-      token: qs("token"),
-      cpf: patient.cpf,
-      code: CODE,
-      source: "paciente",
-      submitted_at: new Date().toISOString(),
-      total,
-      categoria: cat, // texto simples (mínimo/leve/etc.) – apps script pode usar direto
-      metrics: "",
-      questions: JSON.stringify(questionsReadable)
-    });
-
-    // marca como FEITO
-    await sheetPatchBy(SHEETS.PATIENTS, "cpf", patient.cpf, {
-      [`${CODE}_FEITO`]: "sim"
-    });
-
-    setBox("#msg","Formulário enviado. Voltando ao portal…","ok");
-    setTimeout(goPortalWithToken, 1000);
-
-  }catch(err){
-    console.error(err);
-    setBox("#msg", err.message || "Falha ao enviar. Tente novamente.", "err");
-    sending = false;
-    btn.disabled = false;
-    btn.textContent = originalText;
+    return false;
   }
-});
+
+  function isTestLiberado(testsLiberados, testCode) {
+    if (!containsTestCode(testsLiberados, testCode)) return false;
+    if (isObject(testsLiberados) && Object.prototype.hasOwnProperty.call(testsLiberados, testCode)) {
+      const v = testsLiberados[testCode];
+      if (typeof v === "boolean") return v;
+      if (isObject(v) && "liberado" in v) return Boolean(v.liberado);
+      if (typeof v === "string") return !["false", "0", "nao", "não"].includes(v.toLowerCase());
+      return Boolean(v);
+    }
+    return true;
+  }
+
+  function isTestFeito(testsFeitos, testCode) {
+    if (!containsTestCode(testsFeitos, testCode)) return false;
+    if (isObject(testsFeitos) && Object.prototype.hasOwnProperty.call(testsFeitos, testCode)) {
+      const v = testsFeitos[testCode];
+      if (typeof v === "boolean") return v;
+      if (isObject(v) && "feito" in v) return Boolean(v.feito);
+      if (typeof v === "string") return !["false", "0", "nao", "não"].includes(v.toLowerCase());
+      return Boolean(v);
+    }
+    return true;
+  }
+
+  function normalizeTestsFeitosForSave(current) {
+    const out = {};
+    if (!current) return out;
+    if (typeof current === "string") {
+      out[current] = { feito: true };
+      return out;
+    }
+    if (Array.isArray(current)) {
+      current.forEach(item => {
+        if (typeof item === "string") {
+          out[item] = { feito: true };
+        } else if (isObject(item)) {
+          const code = item.code || item.test_code || item.id;
+          if (code) out[code] = { ...item, feito: ("feito" in item) ? Boolean(item.feito) : true };
+        }
+      });
+      return out;
+    }
+    if (isObject(current)) {
+      Object.entries(current).forEach(([key, value]) => {
+        if (typeof value === "boolean") {
+          out[key] = { feito: value };
+        } else if (typeof value === "string") {
+          out[key] = { feito: !["false", "0", "nao", "não"].includes(value.toLowerCase()) };
+        } else if (isObject(value)) {
+          out[key] = { ...value };
+        } else {
+          out[key] = { feito: Boolean(value) };
+        }
+      });
+    }
+    return out;
+  }
+
+  function buildUpdatedTestsFeitos(currentTestsFeitos, testCode, submittedAtIso) {
+    const next = normalizeTestsFeitosForSave(currentTestsFeitos);
+    next[testCode] = {
+      ...(isObject(next[testCode]) ? next[testCode] : {}),
+      feito: true,
+      submitted_at: submittedAtIso
+    };
+    return next;
+  }
+
+  function redirectToAreaPaciente() {
+    const token = getTokenFromUrl();
+    window.location.href = token ? `${AREA_PACIENTE_URL}?token=${encodeURIComponent(token)}` : AREA_PACIENTE_URL;
+  }
+
+  async function getPatientFormAccessByToken() {
+    const token = getTokenFromUrl();
+    const testCode = getTestCodeFromUrl();
+    if (!token || !testCode) {
+      return { data: null, error: new Error("Link inválido ou formulário não informado.") };
+    }
+    if (window.__patientFormAccess && window.__patientFormAccess.form_code === testCode) {
+      return { data: window.__patientFormAccess, error: null };
+    }
+    if (!window.__patientFormAccessPromise) {
+      window.__patientFormAccessPromise = supabaseClient
+        .rpc("get_public_patient_form_access", {
+          p_token: token,
+          p_form_code: testCode
+        })
+        .then(({ data, error }) => {
+          if (error) return { data: null, error };
+          const row = Array.isArray(data) ? data[0] : data;
+          window.__patientFormAccess = row || null;
+          return { data: row || null, error: null };
+        });
+    }
+    return window.__patientFormAccessPromise;
+  }
+
+  function installPatientTokenAccessShim() {
+    if (!supabaseClient || supabaseClient.__patientTokenAccessShim) return;
+    const originalFrom = supabaseClient.from.bind(supabaseClient);
+    supabaseClient.from = function(table) {
+      if (table !== "patients") return originalFrom(table);
+      const selectBuilder = {
+        select() { return this; },
+        eq() { return this; },
+        in() { return this; },
+        limit() { return this; },
+        order() { return this; },
+        maybeSingle() { return getPatientFormAccessByToken(); },
+        single() { return getPatientFormAccessByToken(); },
+        async then(resolve, reject) {
+          try {
+            const result = await getPatientFormAccessByToken();
+            return resolve(result);
+          } catch (err) {
+            if (reject) return reject(err);
+            throw err;
+          }
+        }
+      };
+      return {
+        select() { return selectBuilder; },
+        update() {
+          return {
+            eq: async () => ({ data: null, error: null })
+          };
+        }
+      };
+    };
+    supabaseClient.__patientTokenAccessShim = true;
+  }
+
+  function renderPatientInfo(patient) {
+    const g = $("#pacInfo");
+    g.innerHTML = "";
+    [["Nome", patient.nome || "-"], ["E-mail", patient.email || "-"]].forEach(([k, v]) => {
+      const div = document.createElement("div");
+      div.className = "info";
+      div.innerHTML = `<b>${k}</b><div>${v || "-"}</div>`;
+      g.appendChild(div);
+    });
+    g.classList.remove("hidden");
+  }
+
+  function renderQuestions() {
+    const host = $("#questions");
+    host.innerHTML = "";
+    ITEMS.forEach((text, idx) => {
+      const number = idx + 1;
+      const qn = String(number).padStart(2, "0");
+      const wrap = document.createElement("section");
+      wrap.className = "question";
+      wrap.setAttribute("data-q", String(number));
+      const title = document.createElement("h2");
+      title.className = "question-title";
+      title.textContent = `${number}. ${text}`;
+      const options = document.createElement("div");
+      options.className = "options";
+      CHOICES.forEach(choice => {
+        const id = `q${qn}_${choice.value}`;
+        const label = document.createElement("label");
+        label.className = "option";
+        label.innerHTML = `
+          <input type="radio" name="q${qn}" id="${id}" value="${choice.value}" required>
+          <span>${choice.label}</span>
+        `;
+        options.appendChild(label);
+      });
+      wrap.append(title, options);
+      host.appendChild(wrap);
+    });
+  }
+
+  function getChoiceLabelByValue(value) {
+    const choice = CHOICES.find(item => item.value === Number(value));
+    return choice ? choice.label : "";
+  }
+
+  function countAnswered() {
+    let count = 0;
+    for (let i = 1; i <= ITEMS.length; i++) {
+      const qn = String(i).padStart(2, "0");
+      if (document.querySelector(`input[name="q${qn}"]:checked`)) count++;
+    }
+    return count;
+  }
+
+  function updateProgress() {
+    const answered = countAnswered();
+    $("#progressText").textContent = `Progresso: ${answered}/${ITEMS.length}`;
+    $("#bar").style.width = `${(answered / ITEMS.length) * 100}%`;
+  }
+
+  function saveDraft() {
+    const data = {};
+    for (let i = 1; i <= ITEMS.length; i++) {
+      const qn = String(i).padStart(2, "0");
+      const selected = document.querySelector(`input[name="q${qn}"]:checked`);
+      if (selected) data[`q${qn}`] = Number(selected.value);
+    }
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch (err) {
+      console.warn("Falha ao salvar rascunho", err);
+    }
+  }
+
+  function restoreDraft() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      Object.entries(data || {}).forEach(([key, value]) => {
+        const qn = key.replace("q", "");
+        const input = document.querySelector(`input[name="q${qn}"][value="${value}"]`);
+        if (input) input.checked = true;
+      });
+    } catch (err) {
+      console.warn("Falha ao restaurar rascunho", err);
+    }
+  }
+
+  function clearDraft() {
+    localStorage.removeItem(STORAGE_KEY);
+    document.querySelectorAll('input[type="radio"][name^="q"]').forEach(input => {
+      input.checked = false;
+    });
+    document.querySelectorAll(".question.invalid").forEach(el => el.classList.remove("invalid"));
+    updateProgress();
+    setMessage("Rascunho apagado.", "warn");
+  }
+
+  function validateAllAnswered() {
+    document.querySelectorAll(".question.invalid").forEach(el => el.classList.remove("invalid"));
+    for (let i = 1; i <= ITEMS.length; i++) {
+      const qn = String(i).padStart(2, "0");
+      const selected = document.querySelector(`input[name="q${qn}"]:checked`);
+      if (!selected) {
+        const row = document.querySelector(`.question[data-q="${i}"]`);
+        if (row) {
+          row.classList.add("invalid");
+          row.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+        throw new Error(`Responda o item ${i}.`);
+      }
+    }
+  }
+
+  function collectAnswers() {
+    const answers = {};
+    for (let i = 1; i <= ITEMS.length; i++) {
+      const qn = String(i).padStart(2, "0");
+      const selected = document.querySelector(`input[name="q${qn}"]:checked`);
+      answers[`q${qn}`] = selected ? Number(selected.value) : 0;
+    }
+    return answers;
+  }
+
+  function calculateTotal(answers) {
+    return Object.values(answers).reduce((sum, value) => sum + Number(value || 0), 0);
+  }
+
+  function buildResultsPayload(answers) {
+    return ITEMS.map((item, idx) => {
+      const number = idx + 1;
+      const key = `q${String(number).padStart(2, "0")}`;
+      const value = Number(answers[key] || 0);
+      return {
+        pergunta_numero: number,
+        pergunta: item,
+        resposta: value,
+        resposta_texto: getChoiceLabelByValue(value)
+      };
+    });
+  }
+
+  function buildResultsMetaPayload(total) {
+    return [
+      { key: "bai_total", label: "BAI Total", order: 1, value: total },
+      { key: "pontuacao_minima", label: "Pontuação mínima", order: 2, value: 0 },
+      { key: "pontuacao_maxima", label: "Pontuação máxima", order: 3, value: 63 }
+    ];
+  }
+
+  async function validarAcessoAoTeste() {
+    const token = getTokenFromUrl();
+    installPatientTokenAccessShim();
+    const testCode = getTestCodeFromUrl();
+
+    if (!token) {
+      setStatus("Link inválido ou expirado. Abra o formulário pela área do paciente.", "err");
+      return null;
+    }
+
+    $("#metaInfo").classList.remove("hidden");
+    $("#metaInfo").innerHTML = `
+      <span>Acesso por token</span>
+      <span>Teste: ${testCode}</span>
+    `;
+
+    setStatus("Consultando liberação do teste...", "loading");
+
+    const { data, error } = await supabaseClient
+      .from("patients")
+      .select("cpf, nome, email, tests_liberados, tests_feitos")
+      .eq("cpf", getCpfFromUrl())
+      .maybeSingle();
+
+    if (error) {
+      console.error(error);
+      setStatus("Erro ao consultar a base de dados.", "err");
+      return null;
+    }
+
+    if (!data) {
+      setStatus("CPF não encontrado.", "err");
+      return null;
+    }
+
+    if (!isTestLiberado(data.tests_liberados, testCode)) {
+      setStatus("Teste não liberado.", "warn");
+      return null;
+    }
+
+    if (isTestFeito(data.tests_feitos, testCode)) {
+      setStatus("Teste já realizado. Redirecionando para a área do paciente...", "ok");
+      setTimeout(redirectToAreaPaciente, 700);
+      return null;
+    }
+
+    setStatus("Teste liberado. Formulário disponível.", "ok");
+    return data;
+  }
+
+  async function boot() {
+    renderQuestions();
+    restoreDraft();
+    updateProgress();
+
+    const patient = await validarAcessoAoTeste();
+    if (!patient) return;
+
+    renderPatientInfo(patient);
+    $("#progressWrap").classList.remove("hidden");
+    $("#testForm").classList.remove("hidden");
+  }
+
+  document.addEventListener("change", event => {
+    if (event.target?.matches('input[type="radio"][name^="q"]')) {
+      const row = event.target.closest(".question");
+      if (row) row.classList.remove("invalid");
+      updateProgress();
+      saveDraft();
+    }
+  });
+
+  $("#clearDraft").addEventListener("click", clearDraft);
+
+  $("#testForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    clearMessage();
+
+    const btn = $("#submitBtn");
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "Enviando...";
+
+    try {
+      const cpf = getCpfFromUrl();
+      const token = getTokenFromUrl();
+      installPatientTokenAccessShim();
+      const testCode = getTestCodeFromUrl();
+      const submittedAt = new Date().toISOString();
+
+      validateAllAnswered();
+
+      const answers = collectAnswers();
+      const total = calculateTotal(answers);
+      const resultsPayload = buildResultsPayload(answers);
+      const resultsMetaPayload = buildResultsMetaPayload(total);
+
+      const { data: patient, error: patientError } = await supabaseClient
+        .from("patients")
+        .select("cpf, tests_liberados, tests_feitos")
+        .eq("cpf", cpf)
+        .maybeSingle();
+
+      if (patientError) {
+        console.error(patientError);
+        throw new Error("Erro ao consultar paciente.");
+      }
+
+      if (!patient) throw new Error("CPF não encontrado.");
+      if (!isTestLiberado(patient.tests_liberados, testCode)) throw new Error("Teste não liberado.");
+      if (isTestFeito(patient.tests_feitos, testCode)) {
+        redirectToAreaPaciente();
+        return;
+      }
+
+      const { error: insertError } = await supabaseClient
+        .from("respostas")
+        .insert([{
+          cpf: cpf,
+          code: testCode,
+          submitted_at: submittedAt,
+          results: resultsPayload,
+          results_meta: resultsMetaPayload
+        }]);
+
+      if (insertError) {
+        console.error("ERRO INSERT respostas:", insertError);
+        throw new Error(`Erro ao salvar respostas: ${insertError.message || ""}`.trim());
+      }
+
+      const nextTestsFeitos = buildUpdatedTestsFeitos(patient.tests_feitos, testCode, submittedAt);
+      const { error: updateError } = await supabaseClient
+        .from("patients")
+        .update({ tests_feitos: nextTestsFeitos })
+        .eq("cpf", cpf);
+
+      if (updateError) {
+        console.error(updateError);
+        throw new Error("Resposta salva, mas falhou ao marcar teste como feito.");
+      }
+
+      localStorage.removeItem(STORAGE_KEY);
+      setStatus("Respostas enviadas com sucesso. Redirecionando...", "ok");
+      setTimeout(redirectToAreaPaciente, 900);
+    } catch (err) {
+      console.error(err);
+      setMessage(err.message || "Falha ao enviar. Tente novamente.", "err");
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  });
+
+  boot();
 </script>
 </body>
 </html>
